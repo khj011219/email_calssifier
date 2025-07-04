@@ -161,14 +161,14 @@
         // 로그인 상태 확인
         async function checkLoginStatus() {
             try {
-                const response = await fetch('http://localhost:8000/auth/status', {
+                const response = await fetch('/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
                 
                 if (!data.authenticated) {
                     // 로그인되지 않은 경우에만 로그인 페이지로 이동
-                    window.location.href = 'login.html';
+                    window.location.href = '/login';
                     return;
                 }
                 // 인증된 경우에만 사용자 정보 표시
@@ -177,21 +177,21 @@
                 }
             } catch (error) {
                 console.log('로그인 상태 확인 중 오류:', error);
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             }
         }
 
         // 로그아웃
         async function logout() {
             try {
-                await fetch('http://localhost:8000/auth/logout', {
+                await fetch('/auth/logout', {
                     method: 'POST',
                     credentials: 'include'
                 });
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             } catch (error) {
                 console.error('로그아웃 오류:', error);
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             }
         }
     </script>

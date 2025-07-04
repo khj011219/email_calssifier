@@ -135,7 +135,7 @@ document.getElementById('classify-btn').addEventListener('click', async () => {
         if (searchQuery) params.append('query', searchQuery);
 
         // 백엔드 API 호출
-        const response = await fetch(`http://localhost:8000/gmail/classify_all?${params.toString()}`, {
+        const response = await fetch(`/gmail/classify_all?${params.toString()}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
@@ -174,7 +174,7 @@ document.getElementById('save-relabels-btn').onclick = async function() {
         return;
     }
     try {
-        const response = await fetch('http://localhost:8000/gmail/save_relabels', {
+        const response = await fetch('/gmail/save_relabels', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',

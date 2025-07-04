@@ -96,7 +96,7 @@
         // 로그인 상태 확인
         async function checkLoginStatus() {
             try {
-                const response = await fetch('http://localhost:8000/auth/status', {
+                const response = await fetch('/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
@@ -134,7 +134,7 @@
                 console.log('Gmail 인증 시작...');
                 
                 // 1단계: Gmail 인증 상태 확인
-                const authResponse = await fetch('http://localhost:8000/auth/check-gmail-auth', {
+                const authResponse = await fetch('/auth/check-gmail-auth', {
                     method: 'GET',
                     credentials: 'include'
                 });
@@ -151,7 +151,7 @@
                         로그인 처리 중...
                     `;
                     
-                    const loginResponse = await fetch('http://localhost:8000/auth/google-login', {
+                    const loginResponse = await fetch('/auth/google-login', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -197,7 +197,7 @@
             
             try {
                 console.log('연결 테스트 시작...');
-                const response = await fetch('http://localhost:8000/auth/test', {
+                const response = await fetch('/auth/test', {
                     credentials: 'include'
                 });
                 const data = await response.json();
