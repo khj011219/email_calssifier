@@ -3,7 +3,6 @@ import bcrypt
 import os
 import json
 from datetime import datetime, timedelta
-import streamlit as st
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -75,11 +74,11 @@ class AuthSystem:
                 try:
                     creds.refresh(Request())
                 except Exception as e:
-                    st.error(f"토큰 갱신 중 오류: {e}")
+                    print(f"토큰 갱신 중 오류: {e}")
                     return None
             else:
                 if not os.path.exists(self.CREDENTIALS_FILE):
-                    st.error("Gmail API 설정 파일(credentials.json)이 필요합니다.")
+                    print("Gmail API 설정 파일(credentials.json)이 필요합니다.")
                     return None
                 
                 try:
@@ -87,7 +86,7 @@ class AuthSystem:
                         self.CREDENTIALS_FILE, self.SCOPES)
                     creds = flow.run_local_server(port=0)
                 except Exception as e:
-                    st.error(f"Gmail 인증 중 오류: {e}")
+                    print(f"Gmail 인증 중 오류: {e}")
                     return None
             
             # 토큰을 파일에 저장
@@ -130,7 +129,7 @@ class AuthSystem:
             }
             
         except HttpError as error:
-            st.error(f'사용자 정보 가져오기 중 오류: {error}')
+            print(f'사용자 정보 가져오기 중 오류: {error}')
             return None
     
     def login_or_register_user(self, user_info):
@@ -190,7 +189,7 @@ class AuthSystem:
             service = build('gmail', 'v1', credentials=creds)
             return service
         except HttpError as error:
-            st.error(f'Gmail 서비스 생성 중 오류: {error}')
+            print(f'Gmail 서비스 생성 중 오류: {error}')
             return None
     
     def save_email_classification(self, user_id, email_id, subject, sender, classification, confidence=0.0):
@@ -209,7 +208,7 @@ class AuthSystem:
             return True
             
         except Exception as e:
-            st.error(f"분류 결과 저장 중 오류: {e}")
+            print(f"분류 결과 저장 중 오류: {e}")
             return False
     
     def get_user_classifications(self, user_id, limit=50):
@@ -239,7 +238,7 @@ class AuthSystem:
             ]
             
         except Exception as e:
-            st.error(f"분류 기록 조회 중 오류: {e}")
+            print(f"분류 기록 조회 중 오류: {e}")
             return []
     
     def get_user_by_id(self, user_id):

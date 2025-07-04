@@ -8,7 +8,6 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import streamlit as st
 
 class GmailAPI:
     def __init__(self):
@@ -26,6 +25,26 @@ class GmailAPI:
         
         # 토큰 파일 경로
         self.TOKEN_FILE = 'token.json'
+    
+    def get_credentials_from_env(self):
+        """환경변수에서 Gmail API credentials 가져오기"""
+        credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        if credentials_json:
+            try:
+                return json.loads(credentials_json)
+            except json.JSONDecodeError:
+                return None
+        return None
+    
+    def save_credentials_to_file(self, credentials_data):
+        """환경변수의 credentials를 파일로 저장"""
+        try:
+            with open(self.CREDENTIALS_FILE, 'w') as f:
+                json.dump(credentials_data, f)
+            return True
+        except Exception as e:
+            print(f"Credentials 파일 저장 실패: {e}")
+            return False
     
     def create_credentials_file(self):
         """OAuth 2.0 클라이언트 설정 파일 생성 가이드"""
@@ -45,7 +64,7 @@ class GmailAPI:
             with open(self.CREDENTIALS_FILE, 'w') as f:
                 json.dump(credentials_template, f, indent=2)
             
-            st.warning(f"""
+            print(f"""
             📋 Gmail API 설정이 필요합니다!
             
             1. Google Cloud Console에서 프로젝트를 생성하세요
@@ -74,7 +93,7 @@ class GmailAPI:
                 try:
                     creds.refresh(Request())
                 except Exception as e:
-                    st.error(f"토큰 갱신 중 오류: {e}")
+                    print(f"토큰 갱신 중 오류: {e}")
                     return None
             else:
                 if not self.create_credentials_file():
@@ -85,7 +104,7 @@ class GmailAPI:
                         self.CREDENTIALS_FILE, self.SCOPES)
                     creds = flow.run_local_server(port=0)
                 except Exception as e:
-                    st.error(f"인증 중 오류: {e}")
+                    print(f"인증 중 오류: {e}")
                     return None
             
             # 토큰을 파일에 저장
@@ -100,7 +119,7 @@ class GmailAPI:
             service = build('gmail', 'v1', credentials=creds)
             return service
         except HttpError as error:
-            st.error(f'Gmail 서비스 생성 중 오류: {error}')
+            print(f'Gmail 서비스 생성 중 오류: {error}')
             return None
     
     def get_user_profile(self, creds):
@@ -134,7 +153,7 @@ class GmailAPI:
             }
             
         except HttpError as error:
-            st.error(f'사용자 프로필 가져오기 중 오류: {error}')
+            print(f'사용자 프로필 가져오기 중 오류: {error}')
             return None
     
     def list_messages(self, service, user_id='me', max_results=10, query=''):
@@ -153,13 +172,13 @@ class GmailAPI:
             messages = response.get('messages', [])
             
             if not messages:
-                st.info('이메일이 없습니다.')
+                print('이메일이 없습니다.')
                 return []
             
             return messages
             
         except HttpError as error:
-            st.error(f'이메일 목록 조회 중 오류: {error}')
+            print(f'이메일 목록 조회 중 오류: {error}')
             return []
     
     def get_message_details(self, service, message_id, user_id='me'):
@@ -191,7 +210,7 @@ class GmailAPI:
             }
             
         except HttpError as error:
-            st.error(f'이메일 상세 정보 조회 중 오류: {error}')
+            print(f'이메일 상세 정보 조회 중 오류: {error}')
             return None
     
     def extract_message_body(self, payload):
@@ -232,12 +251,12 @@ class GmailAPI:
             messages = response.get('messages', [])
             
             if not messages:
-                st.info('검색 결과가 없습니다.')
+                print('검색 결과가 없습니다.')
                 return []
             
             # 각 이메일의 상세 정보 조회
             email_details = []
-            with st.spinner('이메일 정보를 가져오는 중...'):
+            with print('이메일 정보를 가져오는 중...'):
                 for message in messages:
                     details = self.get_message_details(service, message['id'])
                     if details:
@@ -246,7 +265,7 @@ class GmailAPI:
             return email_details
             
         except HttpError as error:
-            st.error(f'이메일 검색 중 오류: {error}')
+            print(f'이메일 검색 중 오류: {error}')
             return []
     
     def get_recent_emails(self, service, max_results=10, query=None):
@@ -269,7 +288,7 @@ class GmailAPI:
             ).execute()
             return True
         except HttpError as error:
-            st.error(f'이메일 상태 변경 중 오류: {error}')
+            print(f'이메일 상태 변경 중 오류: {error}')
             return False
     
     def get_email_statistics(self, service, days=7):
@@ -312,7 +331,7 @@ class GmailAPI:
             }
             
         except HttpError as error:
-            st.error(f'이메일 통계 가져오기 중 오류: {error}')
+            print(f'이메일 통계 가져오기 중 오류: {error}')
             return None
 
 # 전역 Gmail API 인스턴스

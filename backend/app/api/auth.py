@@ -11,6 +11,16 @@ router = APIRouter()
 # 간단한 세션 저장소 (실제 운영에서는 Redis나 DB 사용 권장)
 sessions = {}
 
+def get_credentials_from_env():
+    """환경변수에서 Gmail API credentials 가져오기"""
+    credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+    if credentials_json:
+        try:
+            return json.loads(credentials_json)
+        except json.JSONDecodeError:
+            return None
+    return None
+
 @router.get("/test")
 def test_connection():
     """연결 테스트용 API"""
@@ -20,6 +30,11 @@ def test_connection():
 def check_gmail_auth():
     """Gmail 인증 상태 확인"""
     try:
+        # 환경변수에서 credentials 확인
+        credentials_data = get_credentials_from_env()
+        if not credentials_data:
+            return {"authenticated": False, "message": "Gmail API credentials가 설정되지 않음"}
+        
         # Gmail API 인증 시도 (팝업 없이 토큰 파일만 확인)
         creds = None
         if os.path.exists('token.json'):
@@ -61,6 +76,11 @@ def check_auth_status(request: Request):
 async def google_login(req: Request):
     """Gmail API 인증을 통한 로그인 처리"""
     try:
+        # 환경변수에서 credentials 확인
+        credentials_data = get_credentials_from_env()
+        if not credentials_data:
+            raise HTTPException(status_code=500, detail="Gmail API credentials가 설정되지 않음")
+        
         # 이미 인증된 토큰이 있는지 확인
         creds = None
         if os.path.exists('token.json'):
