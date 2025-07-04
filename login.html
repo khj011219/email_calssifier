@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>이메일 분류기 - 로그인</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto;
+        }
+        .login-btn:hover {
+            background: #3367d6;
+        }
+        .loading {
+            display: none;
+            color: #666;
+            margin-top: 20px;
+        }
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>📧 이메일 분류기</h1>
+        <p class="description">
+            Gmail 계정으로 로그인하여<br>
+            이메일을 업무/개인/광고로 자동 분류해보세요
+        </p>
+        
+        <button type="button" class="login-btn" onclick="gmailLogin(event)">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+            </svg>
+            Gmail로 로그인
+        </button>
+        
+        <button type="button" class="login-btn" onclick="testConnection(event)" style="margin-top: 10px; background: #28a745;">
+            🔗 연결 테스트
+        </button>
+        
+        <div class="loading" id="loading">
+            로그인 처리 중...
+        </div>
+        
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 로그인 상태 확인
+        window.onload = function() {
+            checkLoginStatus();
+        };
+
+        // 로그인 상태 확인
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    // 이미 로그인된 경우 메인 페이지로 이동
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.log('로그인 상태 확인 중 오류:', error);
+            }
+        }
+
+        // Gmail 로그인
+        async function gmailLogin(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const loginBtn = document.querySelector('.login-btn');
+            
+            try {
+                loadingDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+                loginBtn.disabled = true;
+                
+                // 로딩 중에도 아이콘 유지
+                loginBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    Gmail 인증 중...
+                `;
+                
+                console.log('Gmail 인증 시작...');
+                
+                // 1단계: Gmail 인증 상태 확인
+                const authResponse = await fetch('http://localhost:8000/auth/check-gmail-auth', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                const authData = await authResponse.json();
+                console.log('Gmail 인증 결과:', authData);
+                
+                if (authData.authenticated) {
+                    // 2단계: 로그인 세션 생성
+                    loginBtn.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                        로그인 처리 중...
+                    `;
+                    
+                    const loginResponse = await fetch('http://localhost:8000/auth/google-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const loginData = await loginResponse.json();
+                    
+                    if (loginData.success) {
+                        console.log('로그인 성공:', loginData);
+                        // 로그인 성공 시 메인 페이지로 이동
+                        window.location.href = 'index.html';
+                    } else {
+                        throw new Error(loginData.error || '로그인에 실패했습니다.');
+                    }
+                } else {
+                    throw new Error('Gmail 인증이 필요합니다. 브라우저 팝업을 확인해주세요.');
+                }
+                
+            } catch (error) {
+                console.error('로그인 오류:', error);
+                errorDiv.textContent = '로그인 중 오류가 발생했습니다: ' + error.message;
+                errorDiv.style.display = 'block';
+            
+                loadingDiv.style.display = 'none';
+                loginBtn.disabled = false;
+                // 최종 복원 시에도 아이콘과 텍스트 함께 표시
+                loginBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    Gmail로 로그인
+                `;
+            }
+        }
+
+        // 연결 테스트
+        async function testConnection(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const errorDiv = document.getElementById('error');
+            
+            try {
+                console.log('연결 테스트 시작...');
+                const response = await fetch('http://localhost:8000/auth/test', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                console.log('연결 성공:', data);
+                errorDiv.textContent = '✅ 연결 성공: ' + data.message;
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = '#28a745';
+                
+            } catch (error) {
+                console.error('연결 실패:', error);
+                errorDiv.textContent = '❌ 연결 실패: ' + error.message;
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = '#dc3545';
+            }
+        }
+    </script>
+</body>
+</html> 
