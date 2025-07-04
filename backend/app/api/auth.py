@@ -177,5 +177,8 @@ if credentials_json:
     try:
         with open('credentials.json', 'w') as f:
             f.write(credentials_json)
+        print("credentials.json 파일 생성 완료")
     except Exception as e:
-        print(f"credentials.json 저장 실패: {e}") 
+        print(f"credentials.json 저장 실패: {e}")
+else:
+    print("GOOGLE_CREDENTIALS 환경변수 없음") 
