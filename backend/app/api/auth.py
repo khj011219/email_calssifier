@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 import json
 from gmail_api import gmail_api
 import os
@@ -33,7 +32,11 @@ def check_gmail_auth():
         # 환경변수에서 credentials 확인
         credentials_data = get_credentials_from_env()
         if not credentials_data:
-            return {"authenticated": False, "message": "Gmail API credentials가 설정되지 않음"}
+            return {
+                "authenticated": False, 
+                "message": "Gmail API credentials가 설정되지 않음",
+                "setup_required": True
+            }
         
         # Gmail API 인증 시도 (팝업 없이 토큰 파일만 확인)
         creds = None
@@ -50,7 +53,11 @@ def check_gmail_auth():
                 except:
                     return {"authenticated": False, "message": "토큰 갱신 실패"}
         
-        return {"authenticated": False, "message": "인증 필요"}
+        return {
+            "authenticated": False, 
+            "message": "인증 필요",
+            "setup_required": True
+        }
         
     except Exception as e:
         return {"authenticated": False, "message": f"인증 확인 오류: {str(e)}"}
@@ -79,7 +86,15 @@ async def google_login(req: Request):
         # 환경변수에서 credentials 확인
         credentials_data = get_credentials_from_env()
         if not credentials_data:
-            raise HTTPException(status_code=500, detail="Gmail API credentials가 설정되지 않음")
+            return JSONResponse({
+                "success": False,
+                "error": "Gmail API credentials가 설정되지 않음. 환경변수 GOOGLE_CREDENTIALS를 설정해주세요."
+            }, status_code=500)
+        
+        # credentials를 파일로 저장 (필요한 경우)
+        if not os.path.exists('credentials.json'):
+            with open('credentials.json', 'w') as f:
+                json.dump(credentials_data, f)
         
         # 이미 인증된 토큰이 있는지 확인
         creds = None
@@ -92,19 +107,26 @@ async def google_login(req: Request):
             elif creds and creds.expired and creds.refresh_token:
                 try:
                     creds.refresh(GoogleRequest())
-                except:
+                except Exception as e:
+                    print(f"토큰 갱신 실패: {e}")
                     creds = None  # 토큰 갱신 실패
         
         # 토큰이 없거나 유효하지 않으면 새로 인증
         if not creds:
-            creds = gmail_api.authenticate_user()
-            if creds is None:
-                raise HTTPException(status_code=401, detail="Gmail 인증 실패")
+            # 배포 환경에서는 브라우저 팝업이 불가능하므로 오류 메시지 반환
+            return JSONResponse({
+                "success": False,
+                "error": "Gmail 인증이 필요합니다. 로컬 환경에서 먼저 인증을 완료하거나, 환경변수에 토큰을 설정해주세요.",
+                "setup_required": True
+            }, status_code=401)
         
         # 사용자 정보 가져오기
         user_info = gmail_api.get_user_profile(creds)
         if user_info is None:
-            raise HTTPException(status_code=401, detail="사용자 정보 가져오기 실패")
+            return JSONResponse({
+                "success": False,
+                "error": "사용자 정보 가져오기 실패"
+            }, status_code=401)
         
         # 세션 생성
         import uuid
@@ -134,8 +156,8 @@ async def google_login(req: Request):
     except Exception as e:
         return JSONResponse({
             "success": False,
-            "error": str(e)
-        }, status_code=401)
+            "error": f"로그인 처리 중 오류: {str(e)}"
+        }, status_code=500)
 
 @router.post("/logout")
 def logout(request: Request):
