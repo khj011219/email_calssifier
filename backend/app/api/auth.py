@@ -171,3 +171,11 @@ def logout(request: Request):
     response.delete_cookie("session_id")
     
     return response 
+
+credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+if credentials_json:
+    try:
+        with open('credentials.json', 'w') as f:
+            f.write(credentials_json)
+    except Exception as e:
+        print(f"credentials.json 저장 실패: {e}") 
